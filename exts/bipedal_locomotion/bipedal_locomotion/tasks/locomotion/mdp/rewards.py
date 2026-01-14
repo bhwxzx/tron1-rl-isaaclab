@@ -178,10 +178,40 @@ def same_feet_x_position(env: ManagerBasedRLEnv,
     # return torch.exp(-feet_x_distance / 0.2)
     return feet_x_distance
 
+# def keep_ankle_pitch_zero_in_air(
+#     env: ManagerBasedRLEnv,
+#     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+#     sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_sensor", body_names=["ankle_[LR]_Link"]),
+#     force_threshold: float = 2.0,
+#     pitch_scale: float = 0.2
+# ) -> torch.Tensor:
+#     """Reward for keeping ankle pitch angle close to zero when foot is in the air.
+    
+#     Args:
+#         env: The environment object.
+#         asset_cfg: Configuration for the robot asset containing DOF positions.
+#         sensor_cfg: Configuration for the contact force sensor.
+#         force_threshold: Threshold value for contact detection (in Newtons).
+#         pitch_scale: Scaling factor for the exponential reward.
+        
+#     Returns:
+#         The computed reward tensor.
+#     """
+#     asset = env.scene[asset_cfg.name]
+#     contact_forces_history = env.scene.sensors[sensor_cfg.name].data.net_forces_w_history[:, :, sensor_cfg.body_ids]
+#     current_contact = torch.norm(contact_forces_history[:, -1], dim=-1) > force_threshold
+#     last_contact = torch.norm(contact_forces_history[:, -2], dim=-1) > force_threshold
+#     contact_filt = torch.logical_or(current_contact, last_contact)
+#     ankle_pitch_left = torch.abs(asset.data.joint_pos[:, 3]) * ~contact_filt[:, 0]
+#     ankle_pitch_right = torch.abs(asset.data.joint_pos[:, 7]) * ~contact_filt[:, 1]
+#     weighted_ankle_pitch = ankle_pitch_left + ankle_pitch_right
+#     return torch.exp(-weighted_ankle_pitch / pitch_scale)
 def keep_ankle_pitch_zero_in_air(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-    sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_sensor", body_names=["ankle_[LR]_Link"]),
+    sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_sensor", body_names=[""]),
+    left_ankle_joint_index: int = 7,
+    right_ankle_joint_index: int = 6,
     force_threshold: float = 2.0,
     pitch_scale: float = 0.2
 ) -> torch.Tensor:
@@ -202,8 +232,8 @@ def keep_ankle_pitch_zero_in_air(
     current_contact = torch.norm(contact_forces_history[:, -1], dim=-1) > force_threshold
     last_contact = torch.norm(contact_forces_history[:, -2], dim=-1) > force_threshold
     contact_filt = torch.logical_or(current_contact, last_contact)
-    ankle_pitch_left = torch.abs(asset.data.joint_pos[:, 3]) * ~contact_filt[:, 0]
-    ankle_pitch_right = torch.abs(asset.data.joint_pos[:, 7]) * ~contact_filt[:, 1]
+    ankle_pitch_left = torch.abs(asset.data.joint_pos[:, left_ankle_joint_index]) * ~contact_filt[:, 0]
+    ankle_pitch_right = torch.abs(asset.data.joint_pos[:, right_ankle_joint_index]) * ~contact_filt[:, 1]
     weighted_ankle_pitch = ankle_pitch_left + ankle_pitch_right
     return torch.exp(-weighted_ankle_pitch / pitch_scale)
 
